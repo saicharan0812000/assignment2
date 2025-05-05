@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+# Validate input
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <datafile>"
+    exit 1
+fi
+
+datafile="$1"
+
+if [ ! -f "$datafile" ]; then
+    echo "Error: File '$datafile' not found."
+    exit 1
+fi
+
+# Use AWK for full preprocessing
+awk -F';' '
+BEGIN {
+    OFS = "\t"
+    max_seen_id = 0
+}
+
+# First row = header
+NR == 1 {
+    for (h = 1; h <= NF; h++) {
+        gsub(/\r/, "", $h)
+        printf "%s", $h
+        if (h < NF) printf OFS
+        else printf "\n"
+    }
+    next
+}
+
+{
+    # Clean fields: handle CR, commas in floats, and non-ASCII
+    for (col = 1; col <= NF; col++) {
+        gsub(/\r/, "", $col)
+
+        # Replace commas with dots ONLY for numeric float fields
+        if (col == 9 || col == 11) {
+            gsub(/,/, ".", $col)
+        }
+
+        # Remove non-ASCII characters
+        gsub(/[^\t -~]/, "", $col)
+    }
+
+    # Assign new unique ID if ID is missing (column 1)
+    if ($1 ~ /^[[:space:]]*$/) {
+        if (max_seen_id == 0) {
+            while ((getline l < ARGV[1]) > 0) {
+                split(l, fields, ";")
+                if (fields[1] ~ /^[0-9]+$/ && fields[1] > max_seen_id)
+                    max_seen_id = fields[1]
+            }
+            close(ARGV[1])
+        }
+        max_seen_id++
+        $1 = max_seen_id
+    }
+
+    # Output cleaned row
+    for (col = 1; col <= NF; col++) {
+        printf "%s", $col
+        if (col < NF) printf OFS
+        else printf "\n"
+    }
+}
+' "$datafile"
