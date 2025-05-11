@@ -21,9 +21,9 @@ BEGIN {
     max_seen_id = 0
 }
 
-# First row is headder 
+# First row is headder
 NR == 1 {
-    for (h = 1; h <= NFassignment2; h++) {
+    for (h = 1; h <= NF; h++) {
         gsub(/\r/, "", $h)
         printf "%s", $h
         if (h < NF) printf OFS
@@ -68,3 +68,5 @@ NR == 1 {
     }
 }
 ' "$datafile"
+
+
