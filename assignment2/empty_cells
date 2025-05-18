@@ -15,11 +15,11 @@ if [ ! -f "$spreadsheet" ]; then
     exit 1
 fi
 
-# Read and clean header
+# Read and clean header 
 first_line=$(head -n 1 "$spreadsheet" | tr -d '\r')
 col_total=$(echo "$first_line" | awk -F"$delimiter" '{ print NF }')
 
-# Process the columns
+# Process the columns 
 col_index=1
 echo "$first_line" | awk -F"$delimiter" '{ for (n=1; n<=NF; n++) print $n }' | while read heading; do
     line_count=$(tail -n +2 "$spreadsheet" | wc -l)
@@ -31,7 +31,7 @@ echo "$first_line" | awk -F"$delimiter" '{ for (n=1; n<=NF; n++) print $n }' | w
 
     empty_cells=$((line_count - filled_cells))
 
-    # Final column: suppress newline to match expected layout output
+    # Final column: suppress newline to match expected layout output as in question
     if [ "$col_index" -eq "$col_total" ]; then
         echo -n "$heading: $empty_cells"
     else

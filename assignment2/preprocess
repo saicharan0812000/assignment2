@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
 #23980376
-#Sai charan Pokuri
+#Sai Charan Pokuri
+
 # Validate the input file
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <datafile>"
     exit 1
 fi
 
 datafile="$1"
 
 if [ ! -f "$datafile" ]; then
-    echo "Error: File '$datafile' not found."
     exit 1
 fi
 
-# Used AWK for full preprocessing
+# Output file name with .tsv extension
+output_file="${datafile%.*}.tsv"
+
+# AWK preprocessing and output to .tsv file
 awk -F';' '
 BEGIN {
     OFS = "\t"
     max_seen_id = 0
 }
-
-# First row is headder
+# Process header row (first row)
 NR == 1 {
     for (h = 1; h <= NF; h++) {
         gsub(/\r/, "", $h)
@@ -33,20 +34,16 @@ NR == 1 {
 }
 
 {
-    # Clean fields: handle CR, commas in floats, and non-ASCII
     for (col = 1; col <= NF; col++) {
         gsub(/\r/, "", $col)
-
-        # Turns commas into dots ONLY for numeric float fields
+	# Convert decimal commas to dots for numeric fields (col 9 and 11)
         if (col == 9 || col == 11) {
             gsub(/,/, ".", $col)
         }
-
-        # Remove non-ASCII characters
+	 # Remove non-ASCII characters
         gsub(/[^\t -~]/, "", $col)
     }
-
-    # Assign new unique ID if ID is missing for column 1
+    # If ID field (column 1) is blank, assign a new unique ID
     if ($1 ~ /^[[:space:]]*$/) {
         if (max_seen_id == 0) {
             while ((getline l < ARGV[1]) > 0) {
@@ -59,14 +56,11 @@ NR == 1 {
         max_seen_id++
         $1 = max_seen_id
     }
-
-    # Cleaned output row
+    # Output the cleaned and processed row with tab-separated values
     for (col = 1; col <= NF; col++) {
         printf "%s", $col
         if (col < NF) printf OFS
         else printf "\n"
     }
 }
-' "$datafile"
-
-
+' "$datafile" > "$output_file"
